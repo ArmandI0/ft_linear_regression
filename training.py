@@ -2,6 +2,23 @@ import tools as tls
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import json
+
+stdX = 0
+stdY = 0
+meanX = 0
+meanY =0
+
+def saveThetaAsJson(theta):
+    # Créer le dictionnaire
+	theta_dict = {
+        'theta_1': theta[0],  # Pente
+        'theta_0': theta[1]  # Ordonnée à l'origine
+    }
+    
+    # Sauvegarder dans le fichier JSON
+	f = open('model/theta.json', 'w')
+	json.dump(theta_dict, f, indent=4)
 
 
 def normaliseData(data):
@@ -9,20 +26,17 @@ def normaliseData(data):
 	mean = data.mean()
 	std = data.std()
 	result = (data - mean) / std 
-	return result
+	return result, std, mean
 
-fig, axs = plt.subplots(2, 2)
-np.set_printoptions(suppress=True, precision=2)
+def denormalise_theta(thethaNorm):
+	# Pour le coefficient directeur (pente)
+	theta = (stdY / stdX) * thethaNorm
+	theta0 = meanY - np.sum(meanX * theta)
+	thetaF = theta[0][0]
 
-dataSet = tls.load_csv('data.csv')
-# print(dataSet)
-xi = dataSet['km'].values.reshape(-1, 1) # -1 selectionne automatiquement le bon nombres dans la colone
-yi = dataSet['price'].values.reshape(-1, 1)
-# Reshape les datas pour les mettres sous formes de matrice
-x = normaliseData(dataSet['km']).values.reshape(-1, 1) # -1 selectionne automatiquement le bon nombres dans la colone
-y = normaliseData(dataSet['price']).values.reshape(-1, 1)
-# Ajouter une colones de 1 a la matrice x
-X = np.hstack((x, np.ones(x.shape)))
+	return np.array([thetaF, theta0])
+
+
 
 
 # Calcul les y theoriques:
@@ -31,7 +45,6 @@ def model(X, theta):
 	# Produit matriciel revient a faire une boucle avec result = X[0] * theta[0] + X[1] * theta[1]
 
 	result = X.dot(theta)
-	print("resultat du modele", result)
 
 	return result
 
@@ -39,18 +52,6 @@ def model(X, theta):
 def grad(X, y, theta):
 	m = len(y)
 	result = 1/m * X.T.dot(model(X, theta) - y )
-    # Tracé des points de données
-	axs[1][1].scatter(x, model(X, theta), c='r', label='Prédictions')  # Points prédits en rouge
-	axs[1][1].scatter(x, y, c='b', label='Données réelles')  # Points réels en bleu
-	predictions = model(X, theta)
-
-    # Tracé de la ligne de régression
-	axs[1][1].plot(x, model(X, theta), 'r--', label='Ligne de régression')  # Ligne pointillée rouge
-	for i in range(len(x)):
-		axs[1][1].plot([x[i], x[i]], [y[i], predictions[i]], 'g--', alpha=0.5)
-    
-	print('gradient = ', result)
-
 	#Retourne le gradiant -> la pente 'a' et l'ordonee a l'origine 'b' result[0] = 'a' / result[1] = 'b'
 	return result
 
@@ -70,25 +71,37 @@ def gradiantDescent(X, y, theta, learningRate, iterations,ax, x):
 	except Exception as e:
 		print(e)
 		return
+	
+
+fig, axs = plt.subplots(2, 2)
+np.set_printoptions(suppress=True, precision=2)
+
+dataSet = tls.load_csv('data.csv')
+# print(dataSet)
+xi = dataSet['km'].values.reshape(-1, 1) # -1 selectionne automatiquement le bon nombres dans la colone
+yi = dataSet['price'].values.reshape(-1, 1)
+# Reshape les datas pour les mettres sous formes de matrice
+x, stdX, meanX = normaliseData(xi) # -1 selectionne automatiquement le bon nombres dans la colone
+y, stdY, meanY = normaliseData(yi)
+# Ajouter une colones de 1 a la matrice x
+X = np.hstack((x, np.ones(x.shape)))
+
+
 
 def main():
 	try:
-		# Pr print que deux ch
-
-
 		# Definition de theta
-		# theta = np.zeros(2).reshape(-1,1)
-		theta = np.array([-0.5, -0.5]).reshape(-1,1)
+		theta = np.zeros(2).reshape(-1,1)
 
 		# Calcul de la fonction cout (Erreur quadratique moyenne)
 
 
 		iterations = 1
 		finalTheta, costHistory = gradiantDescent(X, y, theta, 0.1, iterations, axs[0][0], x)
-		print(finalTheta)
 
 		predict = model(X, finalTheta)
-
+		finalTheta = denormalise_theta(finalTheta)
+		saveThetaAsJson(finalTheta)
 		axs[0][0].scatter(x, y, label='Je sais pas encore', c='b')
 		axs[0][0].plot(x, predict, c='r')
 		axs[0][1].plot(range(0, iterations), costHistory)
