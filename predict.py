@@ -18,6 +18,7 @@ def predict(entry,theta):
 def main():
     try:
         try:
+            np.set_printoptions(suppress=True, precision=2)
             theta = open('model/theta.json', 'r')
             thetaContent = json.load(theta)
             theta = np.array([thetaContent['theta_1'],
@@ -25,12 +26,11 @@ def main():
             
         except Exception as e:
             theta = np.array([0,0])
-        print(theta)
-        entry = input('give a mileage : ')        
+        entry = input('Provide the mileage : ')        
         if isNum(entry):
             print(predict(entry, theta))
         else:
-            print('give a valid entry')
+            print('Invalid mileage')
     except Exception as e:
         print(e)
 
