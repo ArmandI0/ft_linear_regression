@@ -1,6 +1,4 @@
 import json
-import tools as tls
-import pandas as pd
 import numpy as np
 
 def isNum(value):
