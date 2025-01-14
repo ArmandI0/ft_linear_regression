@@ -11,7 +11,7 @@ def saveThetaAsJson(theta):
     }
     
     # Sauvegarder dans le fichier JSON
-	f = open('model/theta.json', 'w')
+	f = open('theta.json', 'w')
 	json.dump(theta_dict, f, indent=4)
 
 def normaliseData(data):
